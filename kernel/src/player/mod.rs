@@ -7,7 +7,11 @@ use bevy_ecs::prelude::*;
 use glam::Vec2;
 use pc_keyboard::KeyCode;
 
-use crate::{flappy_bird, keyboard::KeyboardState};
+use crate::{
+    flappy_bird,
+    keyboard::KeyboardState,
+    player::physics::{Collider, RigidBody},
+};
 
 pub mod physics;
 
@@ -96,18 +100,23 @@ pub struct Player {
 }
 
 #[derive(Component)]
-pub struct Box;
+pub struct BoxEntity;
 
 pub fn setup(mut commands: Commands) {
     commands.spawn((
         Transform::from_translation(Vec2::new(50.0, 50.0)),
         Velocity::linear(Vec2::ZERO),
+        Collider::new(Vec2::splat(64.0)),
+        RigidBody::Dynamic,
         Player { speed: 200.0 },
     ));
 
     commands.spawn((
         Transform::from_translation(Vec2::new(250.0, 250.0)).with_scale(Vec2::splat(50.0)),
-        Box,
+        Velocity::linear(Vec2::ZERO),
+        Collider::new(Vec2::splat(50.0)),
+        RigidBody::Static,
+        BoxEntity,
     ));
 }
 

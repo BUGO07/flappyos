@@ -6,3 +6,4 @@
 pub mod asm;
 pub mod bootloader;
 pub mod fb;
+pub mod serial;

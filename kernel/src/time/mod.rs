@@ -10,7 +10,7 @@ pub mod tsc;
 
 use alloc::string::String;
 
-use crate::heapless::HeaplessVec;
+use crate::{heapless::HeaplessVec, info};
 
 pub static mut TIMERS: HeaplessVec<Timer, 10> = HeaplessVec::new();
 
@@ -77,6 +77,7 @@ impl Timer {
 }
 
 pub fn register_timer(timer: Timer) {
+    info!("registering timer - {} [{}]", timer.name(), timer.priority);
     unsafe { TIMERS.push(timer).ok() };
     get_timers().sort_by(|a, b| a.priority.cmp(&b.priority));
 }
