@@ -66,6 +66,40 @@ where
     ret
 }
 
+pub struct CpuidResult {
+    pub eax: u32,
+    pub ebx: u32,
+    pub ecx: u32,
+    pub edx: u32,
+}
+
+#[inline(always)]
+pub fn _cpuid_count(leaf: u32, sub_leaf: u32) -> CpuidResult {
+    let eax;
+    let ebx;
+    let ecx;
+    let edx;
+
+    unsafe {
+        asm!(
+            "mov {0:r}, rbx",
+            "cpuid",
+            "xchg {0:r}, rbx",
+            out(reg) ebx,
+            inout("eax") leaf => eax,
+            inout("ecx") sub_leaf => ecx,
+            out("edx") edx,
+            options(nostack, preserves_flags),
+        );
+    }
+    CpuidResult { eax, ebx, ecx, edx }
+}
+
+#[inline(always)]
+pub fn _cpuid(leaf: u32) -> CpuidResult {
+    _cpuid_count(leaf, 0)
+}
+
 #[inline(always)]
 pub fn _rdtsc() -> u64 {
     let low: u32;
@@ -79,6 +113,70 @@ pub fn _rdtsc() -> u64 {
         );
     }
     ((high as u64) << 32) | (low as u64)
+}
+
+#[inline(always)]
+pub fn rdmsr(msr: u32) -> u64 {
+    let high: u32;
+    let low: u32;
+    unsafe {
+        asm!(
+            "rdmsr",
+            in("ecx") msr,
+            out("edx") high,
+            out("eax") low,
+        );
+    }
+    (high as u64) << 32 | low as u64
+}
+
+#[inline(always)]
+pub fn wrmsr(msr: u32, value: u64) {
+    let high = (value >> 32) as u32;
+    let low = value as u32;
+    unsafe {
+        asm!(
+            "wrmsr",
+            in("ecx") msr,
+            in("edx") high,
+            in("eax") low,
+        );
+    }
+}
+
+pub fn kvm_base() -> u32 {
+    if in_hypervisor() {
+        let mut signature: [u32; 3] = [0; 3];
+        for base in (0x40000000..0x40010000).step_by(0x100) {
+            let id = _cpuid(base);
+
+            signature[0] = id.ebx;
+            signature[1] = id.ecx;
+            signature[2] = id.edx;
+
+            let mut output: [u8; 12] = [0; 12];
+
+            for (i, num) in signature.iter().enumerate() {
+                let bytes = num.to_le_bytes();
+                output[i * 4..(i + 1) * 4].copy_from_slice(&bytes);
+            }
+            if memcmp(
+                c"KVMKVMKVM".as_ptr() as *const c_void,
+                output.as_ptr() as *const c_void,
+                12,
+            ) != 0
+            {
+                return base;
+            }
+        }
+    }
+    0
+}
+
+pub fn in_hypervisor() -> bool {
+    let id = _cpuid(1);
+
+    (id.ecx & (1 << 31)) != 0
 }
 
 #[unsafe(no_mangle)]

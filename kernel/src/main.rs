@@ -16,12 +16,17 @@ extern crate alloc;
 pub mod asm;
 pub mod bootloader;
 pub mod fb;
+pub mod gdt;
+pub mod heapless;
 pub mod ints;
 pub mod keyboard;
+pub mod mario;
 pub mod mem;
+pub mod sched;
+pub mod spinlock;
 pub mod time;
 
-use core::cell::OnceCell;
+use core::{cell::OnceCell, sync::atomic::AtomicU64};
 
 use glam::Vec2;
 use pc_keyboard::KeyCode;
@@ -29,20 +34,23 @@ use pc_keyboard::KeyCode;
 use crate::{
     bootloader::get_framebuffers,
     fb::Framebuffer,
-    keyboard::{KEYBOARD_STATE, keyboard},
-    time::current_pit_ticks,
+    keyboard::{KEYBOARD_STATE, keyboard_thread},
+    time::preferred_timer_ns,
 };
+
+pub static CPU_FREQ: AtomicU64 = AtomicU64::new(0);
 
 pub static mut FB: OnceCell<Framebuffer> = OnceCell::new();
 pub static mut MARIO_POS: Vec2 = Vec2::new(50.0, 50.0);
 pub static mut MARIO_VELOCITY: Vec2 = Vec2::new(0.0, 0.0);
 pub static mut VELOCITY_DAMPENING: Vec2 = Vec2::splat(0.9);
 
-pub mod mario;
+pub const FRAMETIME_60FPS: f32 = 1.0 / 60.0;
 
 #[unsafe(no_mangle)]
 extern "C" fn kmain() -> ! {
     mem::init();
+    gdt::init();
     ints::init();
     ints::pic::init();
     asm::toggle_ints(true);
@@ -50,21 +58,35 @@ extern "C" fn kmain() -> ! {
 
     let framebuffer = get_framebuffers().next().unwrap();
     unsafe { FB.set(Framebuffer::new_from_limine(&framebuffer)).ok() };
+
+    sched::init();
+    sched::spawn_thread(
+        sched::get_proc_by_pid(0).unwrap(),
+        main_thread as usize,
+        "main",
+        false,
+    );
+    sched::start();
+}
+
+fn main_thread() -> ! {
+    sched::spawn_thread(
+        sched::get_proc_by_pid(0).unwrap(),
+        keyboard_thread as usize,
+        "main",
+        false,
+    );
     let fb = unsafe { FB.get_mut().unwrap() };
 
-    crate::ints::pic::unmask(1);
     let keyboard_state = unsafe { KEYBOARD_STATE.get_mut() };
 
-    let mut last_time = current_pit_ticks();
+    let mut last_time = preferred_timer_ns();
     let mut i: i32 = 0;
     let mut x: i32 = 1;
-
     loop {
-        let now = current_pit_ticks();
+        let now = preferred_timer_ns();
         let delta = now - last_time;
-        let delta_secs = delta as f32 / 1000.0;
-
-        keyboard(keyboard_state);
+        let delta_secs = delta as f32 / 1_000_000_000.0;
 
         unsafe {
             let mut input = Vec2::ZERO;
@@ -80,7 +102,7 @@ extern "C" fn kmain() -> ! {
             }
 
             if input != Vec2::ZERO {
-                MARIO_VELOCITY = input.normalize_or_zero() * 150.0;
+                MARIO_VELOCITY = input.normalize_or_zero() * 5.0 * delta_secs;
             } else {
                 MARIO_VELOCITY = Vec2::ZERO;
             }
@@ -103,12 +125,12 @@ extern "C" fn kmain() -> ! {
                 MARIO_VELOCITY = Vec2::ZERO;
             } else {
                 let friction = 0.0005;
-                let drag = 1.0 / (1.0 + friction * delta as f32);
+                let drag = 1.0 / (1.0 + friction * delta_secs as f32);
                 MARIO_VELOCITY *= drag;
             }
         }
 
-        if delta >= 16 {
+        if delta_secs >= FRAMETIME_60FPS {
             last_time = now;
 
             if i > 200 {
@@ -117,17 +139,11 @@ extern "C" fn kmain() -> ! {
             if i <= 1 {
                 x = 1;
             }
-            i += x * (delta as i32 / 10);
+            i += x * (100.0 * delta_secs) as i32;
 
             fb.clear(0x000000);
+            let s = "WELCOME TO FLAPPYOS";
             unsafe {
-                fb.draw_str(
-                    50,
-                    250,
-                    alloc::format!("shice\n{}", fb.pitch).as_str(),
-                    0xFFFFFF,
-                    0x000000,
-                );
                 fb.draw_sprite(
                     MARIO_POS.x as usize,
                     MARIO_POS.y as usize,
@@ -136,11 +152,19 @@ extern "C" fn kmain() -> ! {
                     &mario::SPRITE_DATA,
                     Some(0),
                 );
+                fb.draw_str(
+                    fb.centered_str_x(s, 2.0),
+                    fb.font_height * 2,
+                    s,
+                    0xFFFFFF,
+                    None,
+                    2.0,
+                    2.0,
+                );
             }
             fb.draw_rect((100 + i) as usize, 100, 50, 50, 0xFFFF00);
             fb.present();
         }
-        asm::halt();
     }
 }
 
