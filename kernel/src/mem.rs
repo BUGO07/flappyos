@@ -10,8 +10,11 @@ use limine::memory_map::EntryType;
 use spin::mutex::Mutex;
 use talc::*;
 
-use crate::utils::bootloader::{
-    get_executable_address, get_executable_file, get_hhdm_offset, get_memory_map,
+use crate::{
+    debug, info,
+    utils::bootloader::{
+        get_executable_address, get_executable_file, get_hhdm_offset, get_memory_map,
+    },
 };
 
 pub const KERNEL_STACK_SIZE: usize = 64 * 1024;
@@ -23,7 +26,9 @@ pub static ALLOCATOR: Talck<spin::Mutex<()>, ClaimOnOom> =
         .lock();
 
 pub fn init() {
+    info!("setting up...");
     unsafe {
+        debug!("requesting hhdm and memmap...");
         let hhdm_offset = get_hhdm_offset();
         let mem_map = get_memory_map();
 
@@ -31,6 +36,11 @@ pub fn init() {
 
         for entry in mem_map {
             if entry.entry_type == EntryType::USABLE {
+                debug!(
+                    "claiming 0x{:X}-0x{:X}...",
+                    entry.base,
+                    entry.base + hhdm_offset
+                );
                 allocator
                     .claim(talc::Span::from_base_size(
                         (entry.base + hhdm_offset) as *mut u8,
@@ -40,11 +50,14 @@ pub fn init() {
             } else if entry.entry_type == EntryType::RESERVED {
             }
         }
+        info!("done");
     }
 
     {
         let mem_map = get_memory_map();
         let hhdm_offset = get_hhdm_offset();
+        info!("setting up the kernel pagemap...");
+        debug!("hhdm offset is: 0x{:X}", hhdm_offset);
 
         let mut pmap = Pagemap::new(); // Use x86_64 specific Pagemap
 
@@ -69,6 +82,13 @@ pub fn init() {
 
             let base = align_down(entry.base, psize);
             let end = align_up(entry.base + entry.length, psize);
+
+            debug!(
+                "size: {} bytes, 0x{:X} -> 0x{:X}",
+                end - base,
+                base,
+                base + hhdm_offset
+            );
 
             for i in (base..end).step_by(psize as usize) {
                 if !(i <= !0 - hhdm_offset || i >= hhdm_offset) {
@@ -102,6 +122,7 @@ pub fn init() {
             PAGEMAP.set(Arc::new(Mutex::new(pmap))).ok();
         }
     }
+    info!("memory setup done");
 }
 
 pub mod page_size {

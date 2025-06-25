@@ -6,8 +6,8 @@
 use alloc::sync::Arc;
 
 use crate::{
-    time::TimerKind,
-    time::{Timer, register_timer},
+    info,
+    time::{Timer, TimerKind, register_timer},
     utils::{
         asm::{_cpuid, _rdtsc, wrmsr},
         bootloader::get_hhdm_offset,
@@ -33,7 +33,9 @@ pub struct PvClockVcpuTimeInfo {
 
 pub fn init() {
     let is_supported = supported();
+    info!("kvm clock supported: {}", is_supported);
     if is_supported {
+        info!("setting up...");
         let mut timer = Timer::new(
             TimerKind::KVM,
             0,
@@ -62,6 +64,7 @@ pub fn init() {
         timer
             .set_offset((timer.elapsed_ns)(&timer) - (super::pit::current_pit_ticks() / 1_000_000));
         register_timer(timer);
+        info!("done");
     }
 }
 

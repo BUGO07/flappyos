@@ -8,6 +8,7 @@ use core::sync::atomic::{AtomicU64, Ordering};
 use alloc::string::String;
 
 use crate::{
+    info,
     time::{Timer, TimerKind, register_timer},
     utils::asm::{outb, outl},
 };
@@ -16,6 +17,7 @@ pub const PIT_FREQUENCY: u32 = 1193182;
 pub static ELAPSED_MS: AtomicU64 = AtomicU64::new(0);
 
 pub fn init() {
+    info!("setting up at 1000hz...");
     outb(0x43, 0b00110100);
     outl(0x40, (PIT_FREQUENCY / 1000) & 0xFF);
     outl(0x40, (PIT_FREQUENCY / 1000) >> 8);
@@ -29,6 +31,7 @@ pub fn init() {
         |_: &Timer| ELAPSED_MS.load(Ordering::Relaxed) * 1_000_000,
         0,
     ));
+    info!("done");
 }
 
 pub fn timer_interrupt_handler(_stack_frame: *mut crate::ints::StackFrame) {

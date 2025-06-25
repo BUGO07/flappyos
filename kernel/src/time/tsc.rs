@@ -6,6 +6,7 @@
 use core::sync::atomic::Ordering;
 
 use crate::{
+    info,
     time::{Timer, TimerKind, preferred_timer_ms, register_timer},
     utils::asm::_rdtsc,
 };
@@ -38,6 +39,7 @@ pub fn measure_cpu_frequency() -> u64 {
 }
 
 pub fn init() {
+    info!("setting up...");
     let freq = measure_cpu_frequency();
     register_timer(Timer::new(
         TimerKind::TSC,
@@ -51,4 +53,5 @@ pub fn init() {
         0,
     ));
     crate::CPU_FREQ.store(freq, Ordering::Relaxed);
+    info!("done");
 }

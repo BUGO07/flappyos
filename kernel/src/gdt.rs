@@ -7,7 +7,7 @@
 
 use core::{alloc::Layout, arch::asm};
 
-use crate::mem::KERNEL_STACK_SIZE;
+use crate::{info, mem::KERNEL_STACK_SIZE};
 
 #[derive(Debug, Clone, Copy)]
 #[repr(C, packed)]
@@ -249,7 +249,7 @@ struct Selectors {
 
 pub fn init() {
     unsafe {
-        // info!("loading gdt");
+        info!("loading gdt");
         asm!(
             "mov rdi, {ptr}",
             "lgdt [rdi]",
@@ -271,7 +271,7 @@ pub fn init() {
             code = in(reg) SELECTORS.kernel_code.0,
             options(nostack)
         );
-        // info!("loading tss");
+        info!("loading tss");
         asm!(
             "ltr {tss:x}",
             tss = in(reg) SELECTORS.tss.0,

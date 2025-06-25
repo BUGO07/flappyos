@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-bevy_ecs = { version = "0.16.1", default-features = false } # gonna utilize this maybe
+bevy_ecs = { version = "0.16.1", default-features = false }
 glam = { version = "0.30.4", default-features = false, features = ["nostd-libm"] }
 lazy_static = { version = "1.5.0", features = ["spin_no_std"] }
 libm = "0.2.15"

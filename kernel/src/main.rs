@@ -34,7 +34,7 @@ use pc_keyboard::{HandleControl, Keyboard, ScancodeSet1, layouts::Us104Key};
 
 use crate::{
     keyboard::KeyboardState,
-    player::{Box, Player, SPRITE_SIZE, Transform},
+    player::{BoxEntity, Player, SPRITE_SIZE, Transform},
     time::preferred_timer_ns,
     utils::{bootloader::get_framebuffers, fb::Framebuffer},
 };
@@ -103,7 +103,11 @@ pub fn game_loop() -> ! {
     update_schedule.add_systems((player::player_update, keyboard::keyboard_system));
 
     let mut fixed_update_schedule = Schedule::new(FixedUpdate);
-    fixed_update_schedule.add_systems((player::physics::physics_update, self::render));
+    fixed_update_schedule.add_systems((
+        player::physics::physics_update,
+        player::physics::collision_check,
+        self::render,
+    ));
 
     loop {
         let mut time = world.get_resource_mut::<Time>().unwrap();
@@ -123,8 +127,8 @@ pub fn game_loop() -> ! {
 
 pub fn render(
     mut fb: ResMut<Framebuffer>,
-    player: Single<&Transform, (With<Player>, Without<Box>)>,
-    box_q: Single<&Transform, (With<Box>, Without<Player>)>,
+    player: Single<&Transform, (With<Player>, Without<BoxEntity>)>,
+    box_q: Single<&Transform, (With<BoxEntity>, Without<Player>)>,
 ) {
     fb.clear(0x000000);
 
