@@ -25,7 +25,7 @@ pub fn keyboard_interrupt_handler(_stack_frame: *mut crate::ints::StackFrame) {
         KEYBOARD_STATE
             .get_mut()
             .scancodes
-            .push_back(crate::asm::inb(0x60))
+            .push_back(crate::utils::asm::inb(0x60))
     };
     crate::ints::pic::send_eoi(1);
 }

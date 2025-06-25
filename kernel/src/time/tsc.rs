@@ -6,8 +6,8 @@
 use core::sync::atomic::Ordering;
 
 use crate::{
-    asm::_rdtsc,
     time::{Timer, TimerKind, preferred_timer_ms, register_timer},
+    utils::asm::_rdtsc,
 };
 
 pub fn measure_cpu_frequency() -> u64 {

@@ -8,8 +8,8 @@ use core::sync::atomic::{AtomicU64, Ordering};
 use alloc::string::String;
 
 use crate::{
-    asm::{outb, outl},
     time::{Timer, TimerKind, register_timer},
+    utils::asm::{outb, outl},
 };
 
 pub const PIT_FREQUENCY: u32 = 1193182;

@@ -21,12 +21,14 @@ use alloc::{
 };
 
 use crate::{
-    asm::{halt_loop, memcpy},
-    bootloader::get_hhdm_offset,
     ints::StackFrame,
     mem::{KERNEL_STACK_SIZE, PAGEMAP, Pagemap, USER_STACK_SIZE, flag, page_size},
-    spinlock::SpinLock,
     time::preferred_timer_ns,
+    utils::{
+        asm::{halt_loop, memcpy},
+        bootloader::get_hhdm_offset,
+        spinlock::SpinLock,
+    },
 };
 
 pub static mut SCHEDULER: OnceCell<Scheduler> = OnceCell::new();

@@ -4,10 +4,12 @@
 */
 
 use crate::{
-    asm::{rdmsr, wrmsr},
-    bootloader::get_hhdm_offset,
     ints::StackFrame,
     mem::{PAGEMAP, flag, page_size},
+    utils::{
+        asm::{rdmsr, wrmsr},
+        bootloader::get_hhdm_offset,
+    },
 };
 use core::sync::atomic::{AtomicU64, Ordering, fence};
 
@@ -100,11 +102,11 @@ fn calibrate_timer() {
 #[inline(always)]
 fn mmio_write(reg: u32, val: u32) {
     let addr = MMIO.load(Ordering::Relaxed) + reg as u64;
-    crate::asm::mmio_write(addr, val as u64, core::mem::size_of::<u32>());
+    crate::utils::asm::mmio_write(addr, val as u64, core::mem::size_of::<u32>());
 }
 
 #[inline(always)]
 fn mmio_read(reg: u32) -> u32 {
     let addr = MMIO.load(Ordering::Relaxed) + reg as u64;
-    crate::asm::mmio_read(addr, core::mem::size_of::<u32>()) as u32
+    crate::utils::asm::mmio_read(addr, core::mem::size_of::<u32>()) as u32
 }
