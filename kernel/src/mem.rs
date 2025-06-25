@@ -7,17 +7,15 @@ use core::{alloc::Layout, cell::OnceCell, ptr::null_mut};
 
 use alloc::sync::Arc;
 use limine::memory_map::EntryType;
+use spin::mutex::Mutex;
 use talc::*;
 
-use crate::utils::{
-    bootloader::{get_executable_address, get_executable_file, get_hhdm_offset, get_memory_map},
-    spinlock::SpinLock,
+use crate::utils::bootloader::{
+    get_executable_address, get_executable_file, get_hhdm_offset, get_memory_map,
 };
 
 pub const KERNEL_STACK_SIZE: usize = 64 * 1024;
 pub static KERNEL_STACK: [u8; KERNEL_STACK_SIZE] = [0; KERNEL_STACK_SIZE];
-
-pub const USER_STACK_SIZE: usize = 64 * 1024;
 
 #[global_allocator]
 pub static ALLOCATOR: Talck<spin::Mutex<()>, ClaimOnOom> =
@@ -101,7 +99,7 @@ pub fn init() {
         unsafe {
             // Set CR3 register with the physical address of the PML4 table
             core::arch::asm!("mov cr3, {}", in(reg) pmap.top_level as u64, options(nostack));
-            PAGEMAP.set(Arc::new(SpinLock::new(pmap))).ok();
+            PAGEMAP.set(Arc::new(Mutex::new(pmap))).ok();
         }
     }
 }
@@ -122,7 +120,7 @@ pub mod flag {
     pub const RW: u64 = PRESENT | WRITE;
 }
 
-pub static mut PAGEMAP: OnceCell<Arc<SpinLock<Pagemap>>> = OnceCell::new();
+pub static mut PAGEMAP: OnceCell<Arc<Mutex<Pagemap>>> = OnceCell::new();
 
 unsafe impl Send for Pagemap {}
 unsafe impl Sync for Pagemap {}
