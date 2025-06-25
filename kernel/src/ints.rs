@@ -241,7 +241,7 @@ pub fn init() {
 
         // HANDLERS[0x80] = Some(crate::arch::system::syscall::syscall_dispatch); // skibidi syscall handler
 
-        HANDLERS[0x20] = Some(crate::time::timer_interrupt_handler);
+        HANDLERS[0x20] = Some(crate::time::pit::timer_interrupt_handler);
         HANDLERS[0x21] = Some(crate::keyboard::keyboard_interrupt_handler);
     }
 }

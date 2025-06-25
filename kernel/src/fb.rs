@@ -83,22 +83,74 @@ impl Framebuffer {
         }
     }
 
-    pub fn draw_char(&mut self, x: usize, y: usize, ch: u8, fg: u32, bg: u32) {
+    pub fn draw_char(
+        &mut self,
+        x: usize,
+        y: usize,
+        ch: u8,
+        fg: u32,
+        bg: Option<u32>,
+        scale_x: f32,
+        scale_y: f32,
+    ) {
         let bytes_per_row = self.font_width.div_ceil(8);
         let char_offset = ch as usize * self.font_height * bytes_per_row;
 
-        for row in 0..self.font_height {
-            for col in 0..self.font_width {
-                let byte_index = char_offset + row * bytes_per_row + (col / 8);
-                let bit_index = 7 - (col % 8);
+        let scaled_width = libm::ceilf(self.font_width as f32 * scale_x) as usize;
+        let scaled_height = libm::ceilf(self.font_height as f32 * scale_y) as usize;
+
+        for sy in 0..scaled_height {
+            for sx in 0..scaled_width {
+                let font_x = libm::floorf(sx as f32 / scale_x) as usize;
+                let font_y = libm::floorf(sy as f32 / scale_y) as usize;
+
+                if font_x >= self.font_width || font_y >= self.font_height {
+                    continue;
+                }
+
+                let byte_index = char_offset + font_y * bytes_per_row + (font_x / 8);
+                let bit_index = 7 - (font_x % 8);
                 let byte = self.font.get(byte_index).copied().unwrap_or(0);
-
                 let is_on = (byte >> bit_index) & 1 != 0;
-                let color = if is_on { fg } else { bg };
+                let color = if is_on { Some(fg) } else { bg };
 
-                self.draw_pixel(x + col, y + row, color);
+                if let Some(color) = color {
+                    self.draw_pixel(x + sx, y + sy, color);
+                }
             }
         }
+    }
+
+    pub fn draw_str(
+        &mut self,
+        mut x: usize,
+        mut y: usize,
+        s: &str,
+        fg: u32,
+        bg: Option<u32>,
+        scale_x: f32,
+        scale_y: f32,
+    ) {
+        let scaled_width = libm::ceilf(self.font_width as f32 * scale_x) as usize;
+        let scaled_height = libm::ceilf(self.font_height as f32 * scale_y) as usize;
+
+        for ch in s.bytes() {
+            if ch == b'\n' {
+                x = 0;
+                y += scaled_height + self.font_spacing;
+                continue;
+            }
+            self.draw_char(x, y, ch, fg, bg, scale_x, scale_y);
+            x += scaled_width + self.font_spacing;
+        }
+    }
+
+    pub fn centered_str_x(&self, s: &str, scale_x: f32) -> usize {
+        self.width / 2 - (s.len() as f32 * self.font_width as f32 * scale_x / 2.0) as usize
+    }
+
+    pub fn centered_str_y(&self, scale_y: f32) -> usize {
+        self.height / 2 - (self.font_height as f32 * scale_y / 2.0) as usize
     }
 
     pub fn draw_sprite(
@@ -127,18 +179,6 @@ impl Framebuffer {
 
                 self.draw_pixel(screen_x, screen_y, color);
             }
-        }
-    }
-
-    pub fn draw_str(&mut self, mut x: usize, mut y: usize, s: &str, fg: u32, bg: u32) {
-        for ch in s.bytes() {
-            if ch == b'\n' {
-                x = 0;
-                y += self.font_height + self.font_spacing;
-                continue;
-            }
-            self.draw_char(x, y, ch, fg, bg);
-            x += self.font_width + self.font_spacing;
         }
     }
 

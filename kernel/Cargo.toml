@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 glam = { version = "0.30.4", default-features = false, features = ["nostd-libm"] }
 lazy_static = { version = "1.5.0", features = ["spin_no_std"] }
+libm = "0.2.15"
 limine = "0.5"
 pc-keyboard = "0.8.0"
 spin = "0.10.0"

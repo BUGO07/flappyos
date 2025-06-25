@@ -258,6 +258,7 @@ version = "0.1.0"
 dependencies = [
  "glam",
  "lazy_static",
+ "libm",
  "limine",
  "pc-keyboard",
  "spin 0.10.0",

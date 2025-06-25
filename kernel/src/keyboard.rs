@@ -30,17 +30,21 @@ pub fn keyboard_interrupt_handler(_stack_frame: *mut crate::ints::StackFrame) {
     crate::ints::pic::send_eoi(1);
 }
 
-pub fn keyboard(keyboard_state: &mut KeyboardState) {
-    if !keyboard_state.scancodes.is_empty() {
-        let scancode = keyboard_state.scancodes.pop_front().unwrap();
-        let keys_down = &mut keyboard_state.keys_down;
-        if let Ok(Some(key_event)) = keyboard_state.keyboard.add_byte(scancode) {
-            if key_event.state == pc_keyboard::KeyState::Down {
-                if !keys_down.contains(&key_event.code) {
-                    keys_down.push(key_event.code);
+pub fn keyboard_thread() -> ! {
+    crate::ints::pic::unmask(1);
+    let keyboard_state = unsafe { KEYBOARD_STATE.get_mut() };
+    loop {
+        if !keyboard_state.scancodes.is_empty() {
+            let scancode = keyboard_state.scancodes.pop_front().unwrap();
+            let keys_down = &mut keyboard_state.keys_down;
+            if let Ok(Some(key_event)) = keyboard_state.keyboard.add_byte(scancode) {
+                if key_event.state == pc_keyboard::KeyState::Down {
+                    if !keys_down.contains(&key_event.code) {
+                        keys_down.push(key_event.code);
+                    }
+                } else {
+                    keys_down.retain(|&x| x != key_event.code);
                 }
-            } else {
-                keys_down.retain(|&x| x != key_event.code);
             }
         }
     }
