@@ -6,10 +6,12 @@
 use alloc::sync::Arc;
 
 use crate::{
-    asm::{_cpuid, _rdtsc, wrmsr},
-    bootloader::get_hhdm_offset,
     time::TimerKind,
     time::{Timer, register_timer},
+    utils::{
+        asm::{_cpuid, _rdtsc, wrmsr},
+        bootloader::get_hhdm_offset,
+    },
 };
 
 lazy_static::lazy_static! {
@@ -65,7 +67,7 @@ pub fn init() {
 
 pub fn supported() -> bool {
     let mut is_supported = false;
-    let base = crate::asm::kvm_base();
+    let base = crate::utils::asm::kvm_base();
     if base != 0 {
         let id = _cpuid(0x40000001);
         is_supported = (id.eax & (1 << 3)) != 0

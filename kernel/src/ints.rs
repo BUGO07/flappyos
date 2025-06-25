@@ -264,7 +264,7 @@ pub mod pic {
         Released under EUPL 1.2 License
     */
 
-    use crate::asm::{inb, outb};
+    use crate::utils::asm::{inb, outb};
 
     const PIC_EOI: u8 = 0x20;
     const ICW1_ICW4: u8 = 0x01;

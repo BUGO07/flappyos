@@ -9,7 +9,7 @@ use alloc::sync::Arc;
 use limine::memory_map::EntryType;
 use talc::*;
 
-use crate::{
+use crate::utils::{
     bootloader::{get_executable_address, get_executable_file, get_hhdm_offset, get_memory_map},
     spinlock::SpinLock,
 };
