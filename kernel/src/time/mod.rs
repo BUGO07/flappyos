@@ -5,26 +5,20 @@
 
 // pub mod hpet;
 pub mod kvm;
-pub mod lapic;
 pub mod pit;
 pub mod tsc;
-
-pub fn init() {
-    pit::init();
-    kvm::init();
-    tsc::init();
-    lapic::init();
-}
-
-pub fn init_hpet() {
-    // hpet::init();
-}
 
 use alloc::string::String;
 
 use crate::heapless::HeaplessVec;
 
 pub static mut TIMERS: HeaplessVec<Timer, 10> = HeaplessVec::new();
+
+pub fn init() {
+    pit::init();
+    kvm::init();
+    tsc::init();
+}
 
 pub struct Timer {
     pub kind: TimerKind,

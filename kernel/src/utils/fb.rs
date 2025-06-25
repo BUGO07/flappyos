@@ -6,11 +6,12 @@
 use core::ffi::c_void;
 
 use alloc::vec::Vec;
+use bevy_ecs::prelude::*;
 use glam::{UVec2, Vec2};
 
 use crate::utils::asm::memcpy;
 
-#[derive(Debug)]
+#[derive(Debug, Resource)]
 pub struct Framebuffer {
     pub backbuffer: Vec<u32>,
     pub addr: *mut u8,
@@ -22,6 +23,9 @@ pub struct Framebuffer {
     pub font_height: u32,
     pub font_spacing: u32,
 }
+
+unsafe impl Send for Framebuffer {}
+unsafe impl Sync for Framebuffer {}
 
 impl Framebuffer {
     pub fn new_from_limine(fb: &limine::framebuffer::Framebuffer) -> Self {
@@ -115,9 +119,11 @@ impl Framebuffer {
         let scaled_width = libm::ceilf(self.font_width as f32 * scale.x) as u32;
         let scaled_height = libm::ceilf(self.font_height as f32 * scale.y) as u32;
 
+        let start_x = pos.x;
+
         for ch in s.bytes() {
             if ch == b'\n' {
-                pos.x = 0;
+                pos.x = start_x;
                 pos.y += scaled_height + self.font_spacing;
                 continue;
             }
@@ -127,7 +133,8 @@ impl Framebuffer {
     }
 
     pub fn centered_str_x(&self, s: &str, scale_x: f32) -> u32 {
-        self.size.x / 2 - (s.len() as f32 * self.font_width as f32 * scale_x / 2.0) as u32
+        let longest_line = s.lines().map(|line| line.len()).max().unwrap_or(0);
+        self.size.x / 2 - (longest_line as f32 * self.font_width as f32 * scale_x / 2.0) as u32
     }
 
     pub fn centered_str_y(&self, scale_y: f32) -> u32 {
