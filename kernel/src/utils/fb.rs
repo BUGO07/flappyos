@@ -182,6 +182,7 @@ impl Framebuffer {
         &mut self,
         pos: Vec2,
         size: UVec2,
+        scale: Vec2,
         data: &[u32],
         transparent: Option<u32>,
         angle_rad: f32,
@@ -190,14 +191,17 @@ impl Framebuffer {
         let sin = sin(angle_rad);
         let cos = cos(angle_rad);
 
-        let screen_w = size.x;
-        let screen_h = size.y;
+        let inv_scale_x = 1.0 / scale.x;
+        let inv_scale_y = 1.0 / scale.y;
+
+        let scaled_size = (size.as_vec2() * scale).as_uvec2();
+        let screen_w = scaled_size.x;
+        let screen_h = scaled_size.y;
 
         for sy in 0..screen_h {
+            let dy = sy as f32 * inv_scale_y - pivot.y;
             for sx in 0..screen_w {
-                // Translate to origin (pivot), rotate, then translate back
-                let dx = sx as f32 - pivot.x;
-                let dy = sy as f32 - pivot.y;
+                let dx = sx as f32 * inv_scale_x - pivot.x;
 
                 let src_x = cos * dx + sin * dy + pivot.x;
                 let src_y = -sin * dx + cos * dy + pivot.y;
@@ -229,8 +233,15 @@ impl Framebuffer {
         }
     }
 
-    pub fn draw_sprite(&mut self, pos: Vec2, size: UVec2, data: &[u32], transparent: Option<u32>) {
-        self.draw_sprite_rotated(pos, size, data, transparent, 0.0);
+    pub fn draw_sprite(
+        &mut self,
+        pos: Vec2,
+        size: UVec2,
+        scale: Vec2,
+        data: &[u32],
+        transparent: Option<u32>,
+    ) {
+        self.draw_sprite_rotated(pos, size, scale, data, transparent, 0.0);
     }
 
     pub fn clear(&mut self, color: u32) {

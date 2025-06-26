@@ -243,6 +243,19 @@ pub fn init() {
 
         install_interrupt(0x20, crate::arch::time::pit::timer_interrupt_handler);
         install_interrupt(0x21, crate::arch::keyboard::keyboard_interrupt_handler);
+
+        // setup fpu
+        let mut cr0: u64;
+        asm!("mov {}, cr0", out(reg) cr0);
+        cr0 &= !(1 << 3); // Clear TS
+        asm!("mov cr0, {}", in(reg) cr0);
+
+        let mut cr4: u64;
+        asm!("mov {}, cr4", out(reg) cr4);
+        cr4 |= (1 << 9) | (1 << 10); // OSFXSR and OSXMMEXCPT
+        asm!("mov cr4, {}", in(reg) cr4);
+
+        asm!("fninit");
     }
 }
 

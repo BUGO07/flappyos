@@ -9,7 +9,7 @@ use bevy_math::{UVec2, Vec2};
 use pc_keyboard::KeyCode;
 use rand::rngs::SmallRng;
 
-use crate::{arch::keyboard::KeyboardState, game::MenuState};
+use crate::{arch::keyboard::KeyboardState, game::MenuState, utils::fb::Framebuffer};
 
 #[derive(ScheduleLabel, Hash, PartialEq, Eq, Debug, Clone)]
 pub struct Startup;
@@ -189,6 +189,9 @@ impl Collider {
 #[derive(Component)]
 pub struct StateScoped(pub MenuState);
 
+#[derive(Component)]
+pub struct ScreenScoped;
+
 pub fn in_state<R: Resource + PartialEq>(state: R) -> impl FnMut(Option<Res<R>>) -> bool {
     move |current_state: Option<Res<R>>| match current_state {
         Some(current_state) => *current_state == state,
@@ -217,7 +220,30 @@ pub fn state_scoped(
 ) {
     for (entity, scope) in &query {
         if scope.0 != *state {
-            commands.entity(entity).despawn();
+            commands.entity(entity).try_despawn();
+        }
+    }
+}
+
+pub fn screen_scoped(
+    mut commands: Commands,
+    fb: Res<Framebuffer>,
+    sprite_q: Query<(Entity, &Transform, &Sprite), With<ScreenScoped>>,
+    rect_q: Query<(Entity, &Transform, &Rect), With<ScreenScoped>>,
+) {
+    for (entity, transform, sprite) in &sprite_q {
+        if transform.position.x + sprite.size.x * transform.scale.x < 0.0
+            || transform.position.x - sprite.size.x * transform.scale.x > fb.size.x as f32
+        {
+            commands.entity(entity).try_despawn();
+        }
+    }
+
+    for (entity, transform, rect) in &rect_q {
+        if transform.position.x + rect.size.x * transform.scale.x < 0.0
+            || transform.position.x - rect.size.x * transform.scale.x > fb.size.x as f32
+        {
+            commands.entity(entity).try_despawn();
         }
     }
 }
