@@ -5,11 +5,9 @@
 
 use core::sync::atomic::Ordering;
 
-use crate::{
-    info,
-    time::{Timer, TimerKind, preferred_timer_ms, register_timer},
-    utils::asm::_rdtsc,
-};
+use crate::{arch::time::preferred_timer_ms, info, utils::asm::_rdtsc};
+
+use super::{Timer, TimerKind, register_timer};
 
 pub fn measure_cpu_frequency() -> u64 {
     if super::kvm::supported() {

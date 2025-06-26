@@ -135,7 +135,7 @@ pub fn log_message(level: &str, color: &str, mut module_path: &str, args: core::
 
         let digits = 5;
 
-        let elapsed_ns = crate::time::preferred_timer_ns();
+        let elapsed_ns = crate::arch::time::preferred_timer_ns();
         let subsecond_ns = elapsed_ns % 1_000_000_000;
 
         let divisor = 10u64.pow(9 - digits);

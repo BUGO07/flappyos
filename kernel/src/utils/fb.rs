@@ -86,7 +86,15 @@ impl Framebuffer {
         }
     }
 
-    pub fn draw_char(&mut self, pos: UVec2, ch: u8, fg: u32, bg: Option<u32>, scale: Vec2) {
+    pub fn draw_char(
+        &mut self,
+        pos: UVec2,
+        ch: u8,
+        fg: u32,
+        bg: Option<u32>,
+        scale: Vec2,
+        shadow: Option<(UVec2, u32)>,
+    ) {
         let bytes_per_row = self.font_width.div_ceil(8);
         let char_offset = ch as u32 * self.font_height * bytes_per_row;
 
@@ -110,12 +118,28 @@ impl Framebuffer {
 
                 if let Some(color) = color {
                     self.draw_pixel(UVec2::new(pos.x + sx, pos.y + sy), color);
+                    if let Some((shadow, shadow_color)) = shadow {
+                        if shadow != UVec2::ZERO {
+                            self.draw_pixel(
+                                UVec2::new(pos.x + sx + shadow.x, pos.y + sy + shadow.y),
+                                shadow_color,
+                            );
+                        }
+                    }
                 }
             }
         }
     }
 
-    pub fn draw_str(&mut self, mut pos: UVec2, s: &str, fg: u32, bg: Option<u32>, scale: Vec2) {
+    pub fn draw_str_with_shadow(
+        &mut self,
+        mut pos: UVec2,
+        s: &str,
+        fg: u32,
+        bg: Option<u32>,
+        scale: Vec2,
+        shadow: Option<(UVec2, u32)>,
+    ) {
         let scaled_width = libm::ceilf(self.font_width as f32 * scale.x) as u32;
         let scaled_height = libm::ceilf(self.font_height as f32 * scale.y) as u32;
 
@@ -127,14 +151,19 @@ impl Framebuffer {
                 pos.y += scaled_height + self.font_spacing;
                 continue;
             }
-            self.draw_char(pos, ch, fg, bg, scale);
+            self.draw_char(pos, ch, fg, bg, scale, shadow);
             pos.x += scaled_width + self.font_spacing;
         }
     }
 
+    pub fn draw_str(&mut self, pos: UVec2, s: &str, fg: u32, bg: Option<u32>, scale: Vec2) {
+        self.draw_str_with_shadow(pos, s, fg, bg, scale, None);
+    }
+
     pub fn centered_str_x(&self, s: &str, scale_x: f32) -> u32 {
         let longest_line = s.lines().map(|line| line.len()).max().unwrap_or(0);
-        self.size.x / 2 - (longest_line as f32 * self.font_width as f32 * scale_x / 2.0) as u32
+        (self.size.x / 2)
+            .saturating_sub((longest_line as f32 * self.font_width as f32 * scale_x / 2.0) as u32)
     }
 
     pub fn centered_str_y(&self, scale_y: f32) -> u32 {

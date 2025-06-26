@@ -429,6 +429,7 @@ name = "flappy-os"
 version = "0.1.0"
 dependencies = [
  "bevy_ecs",
+ "bytemuck",
  "glam",
  "lazy_static",
  "libm",

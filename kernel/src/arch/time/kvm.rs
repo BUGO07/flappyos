@@ -7,12 +7,13 @@ use alloc::sync::Arc;
 
 use crate::{
     info,
-    time::{Timer, TimerKind, register_timer},
     utils::{
         asm::{_cpuid, _rdtsc, wrmsr},
         bootloader::get_hhdm_offset,
     },
 };
+
+use super::{Timer, TimerKind, register_timer};
 
 lazy_static::lazy_static! {
     static ref TABLE: Arc<PvClockVcpuTimeInfo> = Arc::new(PvClockVcpuTimeInfo::default());
