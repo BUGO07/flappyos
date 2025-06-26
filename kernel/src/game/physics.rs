@@ -6,37 +6,9 @@
 use bevy_ecs::prelude::*;
 use glam::Vec2;
 
-use crate::{
-    info,
-    player::{Player, Transform, Velocity},
-    utils::fb::Framebuffer,
-};
+use crate::{game::player::Player, info, utils::fb::Framebuffer};
 
-#[derive(Component, PartialEq, Eq)]
-pub enum RigidBody {
-    Static,
-    Dynamic,
-}
-
-#[derive(Component)]
-pub struct Collider {
-    size: Vec2,
-    offset: Vec2,
-}
-
-impl Collider {
-    pub fn new(size: Vec2) -> Self {
-        Self {
-            size,
-            offset: Vec2::ZERO,
-        }
-    }
-
-    pub fn with_offset(mut self, offset: Vec2) -> Self {
-        self.offset = offset;
-        self
-    }
-}
+use super::ecs::*;
 
 pub fn aabb_collides(pos1: Vec2, size1: Vec2, pos2: Vec2, size2: Vec2) -> bool {
     let x_overlap = pos1.x < pos2.x + size2.x && pos1.x + size1.x > pos2.x;
@@ -48,17 +20,17 @@ pub fn collision_check(
     collider_query: Query<(Entity, &Collider, &Transform)>,
     rigidbody_query: Query<(Entity, &Collider, &RigidBody, &Transform)>,
 ) {
-    for (collider_entity, collider, transform) in collider_query.iter() {
+    for (collider_entity, collider, collider_transform) in collider_query.iter() {
         for (rigidbody_entity, rigidbody_collider, rigidbody, rigidbody_transform) in
             rigidbody_query.iter()
         {
             if rigidbody == &RigidBody::Dynamic
                 && collider_entity != rigidbody_entity
                 && aabb_collides(
-                    transform.position,
-                    collider.size,
+                    collider_transform.position,
+                    collider.size * collider_transform.scale,
                     rigidbody_transform.position,
-                    rigidbody_collider.size,
+                    rigidbody_collider.size * rigidbody_transform.scale,
                 )
             {
                 info!("collision");
@@ -85,14 +57,10 @@ pub fn physics_update(
     //     next_pos.y = transform.position.y;
     // }
 
-    transform.position += velocity.linear * player.speed * crate::FRAMETIME_60FPS;
+    transform.position += velocity.linear * player.speed * super::FRAMETIME_60FPS;
 
-    transform.position.x = transform.position.x.clamp(
-        0.0,
-        fb.size.x as f32 - crate::flappy_bird::SPRITE_WIDTH as f32,
-    );
-    transform.position.y = transform.position.y.clamp(
-        0.0,
-        fb.size.y as f32 - crate::flappy_bird::SPRITE_HEIGHT as f32,
+    transform.position = transform.position.clamp(
+        Vec2::ZERO,
+        fb.size.as_vec2() - crate::assets::FLAPPY_BIRD_SIZE,
     );
 }

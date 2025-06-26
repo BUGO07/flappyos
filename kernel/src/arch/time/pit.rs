@@ -9,9 +9,10 @@ use alloc::string::String;
 
 use crate::{
     info,
-    time::{Timer, TimerKind, register_timer},
     utils::asm::{outb, outl},
 };
+
+use super::{Timer, TimerKind, register_timer};
 
 pub const PIT_FREQUENCY: u32 = 1193182;
 pub static ELAPSED_MS: AtomicU64 = AtomicU64::new(0);
@@ -21,7 +22,7 @@ pub fn init() {
     outb(0x43, 0b00110100);
     outl(0x40, (PIT_FREQUENCY / 1000) & 0xFF);
     outl(0x40, (PIT_FREQUENCY / 1000) >> 8);
-    crate::ints::pic::unmask(0);
+    crate::arch::ints::pic::unmask(0);
     register_timer(Timer::new(
         TimerKind::PIT,
         0,
@@ -34,9 +35,9 @@ pub fn init() {
     info!("done");
 }
 
-pub fn timer_interrupt_handler(_stack_frame: *mut crate::ints::StackFrame) {
+pub fn timer_interrupt_handler(_stack_frame: *mut crate::arch::ints::StackFrame) {
     pit_tick();
-    crate::ints::pic::send_eoi(0);
+    crate::arch::ints::pic::send_eoi(0);
 }
 
 pub fn elapsed_pretty(digits: u32) -> String {

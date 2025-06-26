@@ -10,7 +10,7 @@ pub mod tsc;
 
 use alloc::string::String;
 
-use crate::{heapless::HeaplessVec, info};
+use crate::{info, utils::heapless::HeaplessVec};
 
 pub static mut TIMERS: HeaplessVec<Timer, 10> = HeaplessVec::new();
 
@@ -111,7 +111,7 @@ pub fn preferred_timer_ns() -> u64 {
 
 #[inline(always)]
 pub fn preferred_timer_pretty(digits: u32) -> String {
-    crate::time::elapsed_time_pretty(preferred_timer_ns(), digits)
+    elapsed_time_pretty(preferred_timer_ns(), digits)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

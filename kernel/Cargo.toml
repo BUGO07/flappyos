@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 bevy_ecs = { version = "0.16.1", default-features = false }
+bytemuck = "1.23.1"
 glam = { version = "0.30.4", default-features = false, features = ["nostd-libm"] }
 lazy_static = { version = "1.5.0", features = ["spin_no_std"] }
 libm = "0.2.15"

@@ -7,7 +7,7 @@
 
 use core::{alloc::Layout, arch::asm};
 
-use crate::{info, mem::KERNEL_STACK_SIZE};
+use crate::{arch::mem::KERNEL_STACK_SIZE, info};
 
 #[derive(Debug, Clone, Copy)]
 #[repr(C, packed)]
