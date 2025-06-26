@@ -25,7 +25,7 @@ use crate::{
     game::{
         ecs::*,
         physics::{collision_check, physics_update},
-        player::{player_setup, player_update},
+        player::{Score, game_over, player_setup, player_update, update_score},
         render::render_fixed_update,
     },
     utils::{bootloader::get_framebuffers, fb::Framebuffer},
@@ -39,11 +39,9 @@ pub static mut WORLD: OnceCell<World> = OnceCell::new();
 pub enum MenuState {
     #[default]
     Main,
-    Game,
+    Playing,
+    GameOver,
 }
-
-#[derive(Component)]
-pub struct StateScoped(pub MenuState);
 
 pub fn setup(mut commands: Commands, fb: Res<Framebuffer>) {
     let s = "WELCOME TO FLAPPYOS";
@@ -74,40 +72,7 @@ pub fn setup(mut commands: Commands, fb: Res<Framebuffer>) {
 }
 
 pub fn press_space_to_begin(mut state: ResMut<MenuState>) {
-    *state = MenuState::Game;
-}
-
-pub fn in_state<R: Resource + PartialEq>(state: R) -> impl FnMut(Option<Res<R>>) -> bool {
-    move |current_state: Option<Res<R>>| match current_state {
-        Some(current_state) => *current_state == state,
-        None => false,
-    }
-}
-
-pub fn input_just_pressed(key: KeyCode) -> impl FnMut(Option<Res<KeyboardState>>) -> bool {
-    move |current_state: Option<Res<KeyboardState>>| match current_state {
-        Some(current_state) => current_state.just_pressed(key),
-        None => false,
-    }
-}
-
-pub fn input_pressed(key: KeyCode) -> impl FnMut(Option<Res<KeyboardState>>) -> bool {
-    move |current_state: Option<Res<KeyboardState>>| match current_state {
-        Some(current_state) => current_state.pressed(key),
-        None => false,
-    }
-}
-
-pub fn state_scoped(
-    mut commands: Commands,
-    state: Res<MenuState>,
-    query: Query<(Entity, &StateScoped)>,
-) {
-    for (entity, scope) in &query {
-        if scope.0 != *state {
-            commands.entity(entity).despawn();
-        }
-    }
+    *state = MenuState::Playing;
 }
 
 pub fn game_loop() -> ! {
@@ -136,27 +101,32 @@ pub fn game_loop() -> ! {
     });
 
     world.init_resource::<MenuState>();
+    world.init_resource::<Score>();
 
     let mut startup_schedule = Schedule::new(Startup);
     startup_schedule.add_systems(self::setup);
     startup_schedule.run(world);
 
     let mut update_schedule = Schedule::new(Update);
-    // true updates
+
+    // actual update schedule
     update_schedule.add_systems((
         player_update,
         keyboard_system,
-        state_scoped.run_if(resource_changed::<MenuState>),
+        update_score,
         press_space_to_begin.run_if(
-            resource_exists_and_equals(MenuState::Main).and(input_just_pressed(KeyCode::Spacebar)),
+            not(resource_exists_and_equals(MenuState::Playing))
+                .and(input_just_pressed(KeyCode::Spacebar)),
         ),
     ));
 
     // onenter
     update_schedule.add_systems(
         (
-            player_setup.run_if(in_state(MenuState::Game)),
+            state_scoped,
             setup.run_if(in_state(MenuState::Main)),
+            player_setup.run_if(in_state(MenuState::Playing)),
+            game_over.run_if(in_state(MenuState::GameOver)),
         )
             .run_if(resource_changed::<MenuState>),
     );

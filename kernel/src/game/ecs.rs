@@ -6,6 +6,9 @@
 use alloc::string::{String, ToString};
 use bevy_ecs::{prelude::*, schedule::ScheduleLabel};
 use glam::{UVec2, Vec2};
+use pc_keyboard::KeyCode;
+
+use crate::{arch::keyboard::KeyboardState, game::MenuState};
 
 #[derive(ScheduleLabel, Hash, PartialEq, Eq, Debug, Clone)]
 pub struct Startup;
@@ -179,5 +182,41 @@ impl Collider {
     pub fn with_offset(mut self, offset: Vec2) -> Self {
         self.offset = offset;
         self
+    }
+}
+
+#[derive(Component)]
+pub struct StateScoped(pub MenuState);
+
+pub fn in_state<R: Resource + PartialEq>(state: R) -> impl FnMut(Option<Res<R>>) -> bool {
+    move |current_state: Option<Res<R>>| match current_state {
+        Some(current_state) => *current_state == state,
+        None => false,
+    }
+}
+
+pub fn input_just_pressed(key: KeyCode) -> impl FnMut(Option<Res<KeyboardState>>) -> bool {
+    move |current_state: Option<Res<KeyboardState>>| match current_state {
+        Some(current_state) => current_state.just_pressed(key),
+        None => false,
+    }
+}
+
+pub fn input_pressed(key: KeyCode) -> impl FnMut(Option<Res<KeyboardState>>) -> bool {
+    move |current_state: Option<Res<KeyboardState>>| match current_state {
+        Some(current_state) => current_state.pressed(key),
+        None => false,
+    }
+}
+
+pub fn state_scoped(
+    mut commands: Commands,
+    state: Res<MenuState>,
+    query: Query<(Entity, &StateScoped)>,
+) {
+    for (entity, scope) in &query {
+        if scope.0 != *state {
+            commands.entity(entity).despawn();
+        }
     }
 }

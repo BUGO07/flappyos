@@ -50,10 +50,18 @@ impl Framebuffer {
         self.backbuffer[(pos.y * self.size.x + pos.x) as usize] = color;
     }
 
-    pub fn draw_rect(&mut self, pos: UVec2, size: UVec2, color: u32) {
-        for y in pos.y..pos.y + size.y {
-            for x in pos.x..pos.x + size.x {
-                self.draw_pixel(UVec2::new(x, y), color);
+    pub fn draw_rect(&mut self, pos: Vec2, size: UVec2, color: u32) {
+        let start_x = libm::floorf(pos.x) as i32;
+        let start_y = libm::floorf(pos.y) as i32;
+        let end_x = start_x + size.x as i32;
+        let end_y = start_y + size.y as i32;
+
+        let screen_w = self.size.x as i32;
+        let screen_h = self.size.y as i32;
+
+        for y in start_y.max(0)..end_y.min(screen_h) {
+            for x in start_x.max(0)..end_x.min(screen_w) {
+                self.draw_pixel(UVec2::new(x as u32, y as u32), color);
             }
         }
     }
@@ -170,25 +178,59 @@ impl Framebuffer {
         self.size.y / 2 - (self.font_height as f32 * scale_y / 2.0) as u32
     }
 
-    pub fn draw_sprite(&mut self, pos: UVec2, size: UVec2, data: &[u32], transparent: Option<u32>) {
-        for sy in 0..size.y {
-            for sx in 0..size.x {
-                let screen_x = pos.x + sx;
-                let screen_y = pos.y + sy;
+    pub fn draw_sprite_rotated(
+        &mut self,
+        pos: Vec2,
+        size: UVec2,
+        data: &[u32],
+        transparent: Option<u32>,
+        angle_rad: f32,
+    ) {
+        let pivot = size.as_vec2() / 2.0;
+        let sin = libm::sinf(angle_rad);
+        let cos = libm::cosf(angle_rad);
 
-                if screen_x >= self.size.x || screen_y >= self.size.y {
+        let screen_w = size.x;
+        let screen_h = size.y;
+
+        for sy in 0..screen_h {
+            for sx in 0..screen_w {
+                // Translate to origin (pivot), rotate, then translate back
+                let dx = sx as f32 - pivot.x;
+                let dy = sy as f32 - pivot.y;
+
+                let src_x = cos * dx + sin * dy + pivot.x;
+                let src_y = -sin * dx + cos * dy + pivot.y;
+
+                let src_ix = libm::floorf(src_x) as i32;
+                let src_iy = libm::floorf(src_y) as i32;
+
+                if src_ix < 0 || src_iy < 0 || src_ix >= size.x as i32 || src_iy >= size.y as i32 {
                     continue;
                 }
 
-                let color = data[(sy * size.x + sx) as usize];
+                let color = data[(src_iy as u32 * size.x + src_ix as u32) as usize];
 
                 if Some(color) == transparent {
                     continue;
                 }
 
-                self.draw_pixel(UVec2::new(screen_x, screen_y), color);
+                let screen_x = pos.x as i32 + sx as i32;
+                let screen_y = pos.y as i32 + sy as i32;
+
+                if screen_x >= 0
+                    && screen_y >= 0
+                    && screen_x < self.size.x as i32
+                    && screen_y < self.size.y as i32
+                {
+                    self.draw_pixel(UVec2::new(screen_x as u32, screen_y as u32), color);
+                }
             }
         }
+    }
+
+    pub fn draw_sprite(&mut self, pos: Vec2, size: UVec2, data: &[u32], transparent: Option<u32>) {
+        self.draw_sprite_rotated(pos, size, data, transparent, 0.0);
     }
 
     pub fn clear(&mut self, color: u32) {

@@ -19,18 +19,19 @@ pub fn render_fixed_update(
 
     for (rect, transform) in &rects {
         fb.draw_rect(
-            transform.position.as_uvec2(),
+            transform.position,
             (rect.size * transform.scale).as_uvec2(),
             rect.color,
         );
     }
 
     for (sprite, transform) in &sprites {
-        fb.draw_sprite(
-            transform.position.as_uvec2(),
+        fb.draw_sprite_rotated(
+            transform.position,
             (sprite.size * transform.scale).as_uvec2(),
             sprite.data,
             Some(0),
+            transform.rotation,
         );
     }
 
