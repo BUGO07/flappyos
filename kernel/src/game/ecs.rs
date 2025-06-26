@@ -5,8 +5,9 @@
 
 use alloc::string::{String, ToString};
 use bevy_ecs::{prelude::*, schedule::ScheduleLabel};
-use glam::{UVec2, Vec2};
+use bevy_math::{UVec2, Vec2};
 use pc_keyboard::KeyCode;
+use rand::rngs::SmallRng;
 
 use crate::{arch::keyboard::KeyboardState, game::MenuState};
 
@@ -219,4 +220,9 @@ pub fn state_scoped(
             commands.entity(entity).despawn();
         }
     }
+}
+
+#[derive(Resource)]
+pub struct Random {
+    pub rng: SmallRng,
 }

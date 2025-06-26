@@ -7,7 +7,7 @@ use core::ffi::c_void;
 
 use alloc::vec::Vec;
 use bevy_ecs::prelude::*;
-use glam::{UVec2, Vec2};
+use bevy_math::{UVec2, Vec2, ops::*};
 
 use crate::utils::asm::memcpy;
 
@@ -51,8 +51,8 @@ impl Framebuffer {
     }
 
     pub fn draw_rect(&mut self, pos: Vec2, size: UVec2, color: u32) {
-        let start_x = libm::floorf(pos.x) as i32;
-        let start_y = libm::floorf(pos.y) as i32;
+        let start_x = floor(pos.x) as i32;
+        let start_y = floor(pos.y) as i32;
         let end_x = start_x + size.x as i32;
         let end_y = start_y + size.y as i32;
 
@@ -106,13 +106,13 @@ impl Framebuffer {
         let bytes_per_row = self.font_width.div_ceil(8);
         let char_offset = ch as u32 * self.font_height * bytes_per_row;
 
-        let scaled_width = libm::ceilf(self.font_width as f32 * scale.x) as u32;
-        let scaled_height = libm::ceilf(self.font_height as f32 * scale.y) as u32;
+        let scaled_width = ceil(self.font_width as f32 * scale.x) as u32;
+        let scaled_height = ceil(self.font_height as f32 * scale.y) as u32;
 
         for sy in 0..scaled_height {
             for sx in 0..scaled_width {
-                let font_x = libm::floorf(sx as f32 / scale.x) as u32;
-                let font_y = libm::floorf(sy as f32 / scale.y) as u32;
+                let font_x = floor(sx as f32 / scale.x) as u32;
+                let font_y = floor(sy as f32 / scale.y) as u32;
 
                 if font_x >= self.font_width || font_y >= self.font_height {
                     continue;
@@ -148,8 +148,8 @@ impl Framebuffer {
         scale: Vec2,
         shadow: Option<(UVec2, u32)>,
     ) {
-        let scaled_width = libm::ceilf(self.font_width as f32 * scale.x) as u32;
-        let scaled_height = libm::ceilf(self.font_height as f32 * scale.y) as u32;
+        let scaled_width = ceil(self.font_width as f32 * scale.x) as u32;
+        let scaled_height = ceil(self.font_height as f32 * scale.y) as u32;
 
         let start_x = pos.x;
 
@@ -187,8 +187,8 @@ impl Framebuffer {
         angle_rad: f32,
     ) {
         let pivot = size.as_vec2() / 2.0;
-        let sin = libm::sinf(angle_rad);
-        let cos = libm::cosf(angle_rad);
+        let sin = sin(angle_rad);
+        let cos = cos(angle_rad);
 
         let screen_w = size.x;
         let screen_h = size.y;
@@ -202,8 +202,8 @@ impl Framebuffer {
                 let src_x = cos * dx + sin * dy + pivot.x;
                 let src_y = -sin * dx + cos * dy + pivot.y;
 
-                let src_ix = libm::floorf(src_x) as i32;
-                let src_iy = libm::floorf(src_y) as i32;
+                let src_ix = floor(src_x) as i32;
+                let src_iy = floor(src_y) as i32;
 
                 if src_ix < 0 || src_iy < 0 || src_ix >= size.x as i32 || src_iy >= size.y as i32 {
                     continue;

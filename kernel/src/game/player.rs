@@ -4,13 +4,13 @@
 */
 
 use bevy_ecs::prelude::*;
-use glam::{UVec2, Vec2};
+use bevy_math::{UVec2, Vec2};
 use pc_keyboard::KeyCode;
 
 use crate::{
     arch::keyboard::KeyboardState,
-    assets::{FLAPPY_BIRD_DATA, FLAPPY_BIRD_SIZE},
-    game::{MenuState, StateScoped},
+    assets::{FLAPPY_BIRD_DATA, FLAPPY_BIRD_SIZE, PIPE_DATA, PIPE_SIZE},
+    game::{MenuState, StateScoped, get_random},
     utils::fb::Framebuffer,
 };
 
@@ -18,9 +18,6 @@ use super::ecs::*;
 
 #[derive(Component)]
 pub struct Player;
-
-#[derive(Component)]
-pub struct BoxEntity;
 
 #[derive(Resource, Default)]
 pub struct Score {
@@ -48,26 +45,36 @@ pub fn player_setup(mut commands: Commands) {
         Player,
         StateScoped(MenuState::Playing),
     ));
-
-    commands.spawn((
-        Transform::from_translation(Vec2::new(250.0, 250.0)),
-        Velocity::linear(Vec2::NEG_X * 200.0),
-        Collider::new(Vec2::splat(50.0)),
-        Rect::new(Vec2::splat(50.0), 0xFF00FF),
-        RigidBody::Static,
-        BoxEntity,
-        StateScoped(MenuState::Playing),
-    ));
 }
 
 pub fn player_update(
+    mut commands: Commands,
     player: Single<(&mut Transform, &mut Velocity), With<Player>>,
     keyboard_state: Res<KeyboardState>,
+    time: Res<Time>,
+    fb: Res<Framebuffer>,
+    mut last_time: Local<u64>,
 ) {
     let (mut transform, mut velocity) = player.into_inner();
     if keyboard_state.just_pressed(KeyCode::Spacebar) {
-        velocity.linear.y = -150.0;
-        transform.rotation = -5.0_f32.to_radians();
+        velocity.linear.y = -200.0;
+        transform.rotation = -35.0_f32.to_radians();
+    }
+
+    if *last_time + 1_000_000_000 < time.elapsed_ns {
+        let quarter = fb.size.y / 4;
+        commands.spawn((
+            Transform::from_translation(Vec2::new(
+                600.0,
+                get_random(quarter..(quarter * 3)) as f32,
+            )),
+            Velocity::linear(Vec2::NEG_X * 200.0),
+            Collider::new(PIPE_SIZE),
+            Sprite::new(*PIPE_DATA, PIPE_SIZE),
+            RigidBody::Static,
+            StateScoped(MenuState::Playing),
+        ));
+        *last_time = time.elapsed_ns;
     }
 }
 
