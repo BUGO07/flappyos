@@ -3,7 +3,7 @@
     Released under EUPL 1.2 License
 */
 
-use glam::Vec2;
+use bevy_math::Vec2;
 
 lazy_static::lazy_static! {
     pub static ref FLAPPY_BIRD_DATA: &'static [u32] =

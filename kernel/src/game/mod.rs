@@ -3,12 +3,12 @@
     Released under EUPL 1.2 License
 */
 
-use core::cell::OnceCell;
+use core::{cell::OnceCell, ops::Range};
 
 use bevy_ecs::prelude::*;
 
 use alloc::{collections::vec_deque::VecDeque, vec::Vec};
-use glam::{UVec2, Vec2};
+use bevy_math::{UVec2, Vec2};
 
 pub mod ecs;
 pub mod physics;
@@ -16,6 +16,7 @@ pub mod player;
 pub mod render;
 
 use pc_keyboard::{HandleControl, KeyCode, Keyboard, ScancodeSet1, layouts::Us104Key};
+use rand::{Rng, SeedableRng, distr::uniform::SampleUniform};
 
 use crate::{
     arch::{
@@ -84,6 +85,10 @@ pub fn game_loop() -> ! {
         &get_framebuffers().next().unwrap(),
     ));
 
+    world.insert_resource(Random {
+        rng: rand::SeedableRng::seed_from_u64(preferred_timer_ns()),
+    });
+
     let time = preferred_timer_ns();
 
     world.insert_resource(Time {
@@ -148,4 +153,9 @@ pub fn game_loop() -> ! {
         }
         update_schedule.run(world);
     }
+}
+
+pub fn get_random<T: SampleUniform + PartialOrd>(range: Range<T>) -> T {
+    let mut rng = rand::prelude::SmallRng::seed_from_u64(preferred_timer_ns());
+    rng.random_range(range)
 }

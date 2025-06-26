@@ -5,11 +5,11 @@ edition = "2024"
 
 [dependencies]
 bevy_ecs = { version = "0.16.1", default-features = false }
+bevy_math = { version = "0.16.1", default-features = false, features = ["nostd-libm"] }
 bytemuck = "1.23.1"
-glam = { version = "0.30.4", default-features = false, features = ["nostd-libm"] }
 lazy_static = { version = "1.5.0", features = ["spin_no_std"] }
-libm = "0.2.15"
 limine = "0.5"
 pc-keyboard = "0.8.0"
+rand = { version = "0.9.1", default-features = false, features = ["small_rng"] }
 spin = "0.10.0"
 talc = "4.4.3"

@@ -14,6 +14,7 @@
 )]
 
 extern crate alloc;
+extern crate bevy_math;
 
 pub mod arch;
 pub mod assets;
@@ -24,7 +25,7 @@ use core::sync::atomic::AtomicU64;
 
 use alloc::string::ToString;
 
-use glam::{UVec2, Vec2};
+use bevy_math::{UVec2, Vec2};
 
 use crate::utils::{bootloader::get_framebuffers, fb::Framebuffer};
 

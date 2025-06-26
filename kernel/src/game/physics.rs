@@ -4,9 +4,9 @@
 */
 
 use bevy_ecs::prelude::*;
-use glam::Vec2;
+use bevy_math::Vec2;
 
-use crate::{game::MenuState, info};
+use crate::{assets::FLAPPY_BIRD_SIZE, game::MenuState, info, utils::fb::Framebuffer};
 
 use super::ecs::*;
 
@@ -42,13 +42,14 @@ pub fn collision_check(
 }
 
 pub fn physics_update(
+    mut state: ResMut<MenuState>,
     query: Query<(&mut Transform, &mut Velocity, &RigidBody)>,
-    // box_q: Single<&Transform, (With<Box>, Without<Player>)>,
+    fb: Res<Framebuffer>,
 ) {
     for (mut transform, mut velocity, rigidbody) in query {
         if rigidbody == &RigidBody::Dynamic {
             velocity.linear += Vec2::Y * 4.9; // 9.8/2
-            velocity.angular = velocity.linear.y * 0.02;
+            velocity.angular = (-velocity.linear.y).min(0.0) * -0.02; // idek
         }
 
         // * don't going thru the box
@@ -63,7 +64,15 @@ pub fn physics_update(
         // }
 
         transform.position += velocity.linear * super::FRAMETIME_60FPS;
+
+        transform.position.y = transform.position.y.max(0.0);
+
         transform.rotation = (transform.rotation + velocity.angular * super::FRAMETIME_60FPS)
             .clamp(-100.0_f32.to_radians(), 100.0_f32.to_radians());
+
+        if transform.position.y > fb.size.y as f32 - FLAPPY_BIRD_SIZE.y {
+            *state = MenuState::GameOver;
+            info!("Game Over");
+        }
     }
 }
