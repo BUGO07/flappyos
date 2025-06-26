@@ -28,7 +28,8 @@ pub fn render_fixed_update(
     for (sprite, transform) in &sprites {
         fb.draw_sprite_rotated(
             transform.position,
-            (sprite.size * transform.scale).as_uvec2(),
+            sprite.size.as_uvec2(),
+            transform.scale,
             sprite.data,
             Some(0),
             transform.rotation,

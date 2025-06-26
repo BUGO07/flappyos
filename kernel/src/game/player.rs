@@ -9,7 +9,7 @@ use pc_keyboard::KeyCode;
 
 use crate::{
     arch::keyboard::KeyboardState,
-    assets::{FLAPPY_BIRD_DATA, FLAPPY_BIRD_SIZE, PIPE_DATA, PIPE_SIZE},
+    assets::{FLAPPY_BIRD_DATA, FLAPPY_BIRD_SIZE, PIPE_DATA, PIPE_FLIPPED_DATA, PIPE_SIZE},
     game::{MenuState, StateScoped, get_random},
     utils::fb::Framebuffer,
 };
@@ -28,7 +28,7 @@ pub struct Score {
 #[derive(Component)]
 pub struct ScoreText;
 
-pub fn player_setup(mut commands: Commands) {
+pub fn player_setup(mut commands: Commands, fb: Res<Framebuffer>) {
     commands.spawn((
         Text::new("SCORE - 0\nHIGH SCORE - 0").with_shadow(UVec2::new(1, 1), 0xABABAB),
         Transform::from_translation(UVec2::new(5, 5).as_vec2()),
@@ -37,7 +37,7 @@ pub fn player_setup(mut commands: Commands) {
     ));
 
     commands.spawn((
-        Transform::from_translation(Vec2::new(50.0, 50.0)),
+        Transform::from_translation(Vec2::new(fb.size.x as f32 / 3.0, fb.size.y as f32 / 2.0)),
         Velocity::linear(Vec2::ZERO),
         Collider::new(FLAPPY_BIRD_SIZE),
         Sprite::new(*FLAPPY_BIRD_DATA, FLAPPY_BIRD_SIZE),
@@ -54,6 +54,7 @@ pub fn player_update(
     time: Res<Time>,
     fb: Res<Framebuffer>,
     mut last_time: Local<u64>,
+    mut score: ResMut<Score>,
 ) {
     let (mut transform, mut velocity) = player.into_inner();
     if keyboard_state.just_pressed(KeyCode::Spacebar) {
@@ -61,17 +62,36 @@ pub fn player_update(
         transform.rotation = -35.0_f32.to_radians();
     }
 
-    if *last_time + 1_000_000_000 < time.elapsed_ns {
+    if *last_time + 2_000_000_000 < time.elapsed_ns {
+        score.current += 1;
         let quarter = fb.size.y / 4;
+        let y_pos = get_random(quarter..(quarter * 3)) as f32;
+
+        // bottom
         commands.spawn((
-            Transform::from_translation(Vec2::new(
-                600.0,
-                get_random(quarter..(quarter * 3)) as f32,
-            )),
+            Transform::from_translation(Vec2::new(fb.size.x as f32, y_pos)).with_scale(Vec2 {
+                x: 1.5,
+                y: (((fb.size.y as f32 - y_pos) / fb.size.y as f32) * 5.0) + 1.0,
+            }),
             Velocity::linear(Vec2::NEG_X * 200.0),
             Collider::new(PIPE_SIZE),
             Sprite::new(*PIPE_DATA, PIPE_SIZE),
             RigidBody::Static,
+            ScreenScoped,
+            StateScoped(MenuState::Playing),
+        ));
+
+        // top
+        commands.spawn((
+            Transform::from_translation(Vec2::new(fb.size.x as f32, 0.0)).with_scale(Vec2 {
+                x: 1.5,
+                y: ((y_pos / fb.size.y as f32) * 5.0) - 1.0,
+            }),
+            Velocity::linear(Vec2::NEG_X * 200.0),
+            Collider::new(PIPE_SIZE),
+            Sprite::new(*PIPE_FLIPPED_DATA, PIPE_SIZE),
+            RigidBody::Static,
+            ScreenScoped,
             StateScoped(MenuState::Playing),
         ));
         *last_time = time.elapsed_ns;

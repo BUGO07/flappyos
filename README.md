@@ -16,3 +16,4 @@
 - Basic 2D Physics
 - Sprite Rendering
 - Game Over & Score Display
+- Flappy Bird Gameplay

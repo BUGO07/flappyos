@@ -119,6 +119,7 @@ pub fn game_loop() -> ! {
         player_update,
         keyboard_system,
         update_score,
+        screen_scoped,
         press_space_to_begin.run_if(
             not(resource_exists_and_equals(MenuState::Playing))
                 .and(input_just_pressed(KeyCode::Spacebar)),
