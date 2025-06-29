@@ -1,4 +1,6 @@
-# Flappy Bird Kernel
+# Flappy Bird OS
+
+## Inspired by [TetrisOS](https://www.youtube.com/watch?v=FaILnmUYS_U)
 
 ## Features
 ### OS
