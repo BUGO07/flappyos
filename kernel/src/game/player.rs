@@ -96,6 +96,8 @@ pub fn player_update(
         ));
         *last_time = time.elapsed_ns;
     }
+
+    score.high = score.high.max(score.current);
 }
 
 pub fn update_score(mut text: Single<&mut Text, With<ScoreText>>, score: Res<Score>) {
