@@ -7,7 +7,6 @@
 - Interrupts
 - PIT/TSC/KVM Timers
 - Memory Allocator
-- Paging
 - PS/2 Keyboard
 
 ### Game
